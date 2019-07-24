@@ -1695,6 +1695,7 @@ void Registry::clearArchiveCache()
 
 void Registry::releaseGLObjects(osg::State* state)
 {
+   OSG_NOTICE<<"Registry::releaseGLObjects()"<<std::endl;
     if (_objectCache.valid()) _objectCache->releaseGLObjects( state );
     if (_sharedStateManager.valid()) _sharedStateManager->releaseGLObjects( state );
 }

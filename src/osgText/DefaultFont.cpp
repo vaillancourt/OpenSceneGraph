@@ -24,6 +24,8 @@ using namespace osgText;
 
 DefaultFont::DefaultFont()
 {
+    OSG_NOTICE<<"DefaultFont::DefaultFont() "<<this<<std::endl;
+
     _fontSize = FontResolution(8,12);
 
     _minFilterHint = osg::Texture::LINEAR_MIPMAP_LINEAR;
@@ -34,6 +36,7 @@ DefaultFont::DefaultFont()
 
 DefaultFont::~DefaultFont()
 {
+    OSG_NOTICE<<"DefaultFont::~DefaultFont() "<<this<<std::endl;
 }
 
 osgText::Glyph* DefaultFont::getGlyph(const FontResolution& fontRes, unsigned int charcode)

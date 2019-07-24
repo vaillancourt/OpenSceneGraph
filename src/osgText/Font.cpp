@@ -36,13 +36,34 @@
 using namespace osgText;
 using namespace std;
 
-osg::ref_ptr<Font>& Font::getDefaultFont()
+osg::ref_ptr<Font> Font::getDefaultFont()
 {
+#if 1
+    static OpenThreads::Mutex s_DefaultFontMutex;
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(s_DefaultFontMutex);
+
+    osg::ref_ptr<osg::Object> object = osgDB::Registry::instance()->getObjectCache()->getFromObjectCache("DefaultFont");
+    osg::ref_ptr<osgText::Font> font = dynamic_cast<osgText::Font*>(object.get());
+    if (!font)
+    {
+        font = new DefaultFont;
+        osgDB::Registry::instance()->getObjectCache()->addEntryToObjectCache("DefaultFont", font.get());
+        OSG_NOTICE<<"Font::getDefaultFont() no DefaultFont found, creating a new one "<<font.get()<<" "<<font->className()<<std::endl;
+        return font;
+    }
+    else
+    {
+        OSG_NOTICE<<"Font::getDefaultFont() found "<<font->className()<<", "<<font.get()<<std::endl;
+        return font;
+    }
+
+#else
     static OpenThreads::Mutex s_DefaultFontMutex;
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(s_DefaultFontMutex);
 
     static osg::ref_ptr<Font> s_defaultFont = new DefaultFont;
     return s_defaultFont;
+#endif
 }
 
 static OpenThreads::ReentrantMutex& getFontFileMutex()
@@ -440,6 +461,8 @@ void Font::resizeGLObjectBuffers(unsigned int maxSize)
 
 void Font::releaseGLObjects(osg::State* state) const
 {
+    OSG_NOTICE<<"Font::releaseGLObjects("<<state<<") "<<className()<<", fiilename = "<<getFileName()<<std::endl;
+
     for(StateSets::const_iterator itr = _statesets.begin();
         itr != _statesets.end();
         ++itr)

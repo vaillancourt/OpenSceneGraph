@@ -43,12 +43,12 @@ bool ObjectCache::ClassComp::operator() (const ObjectCache::FileNameOptionsPair&
 ObjectCache::ObjectCache():
     osg::Referenced(true)
 {
-//    OSG_NOTICE<<"Constructed ObjectCache"<<std::endl;
+    OSG_NOTICE<<"Constructed ObjectCache"<<std::endl;
 }
 
 ObjectCache::~ObjectCache()
 {
-//    OSG_NOTICE<<"Destructed ObjectCache"<<std::endl;
+    OSG_NOTICE<<"Destructed ObjectCache"<<std::endl;
 }
 
 void ObjectCache::addObjectCache(ObjectCache* objectCache)
@@ -190,6 +190,8 @@ void ObjectCache::clear()
 
 void ObjectCache::releaseGLObjects(osg::State* state)
 {
+    OSG_NOTICE<<"ObjectCache::releaseGLObjects("<<this<<")"<<std::endl;
+
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_objectCacheMutex);
 
     for(ObjectCacheMap::iterator itr = _objectCache.begin();
@@ -198,5 +200,6 @@ void ObjectCache::releaseGLObjects(osg::State* state)
     {
         osg::Object* object = itr->second.first.get();
         object->releaseGLObjects(state);
+        OSG_NOTICE<<"ObjectCache::releaseGLObjects("<<this<<") : "<<object<<", "<<object->className()<<std::endl;
     }
 }
