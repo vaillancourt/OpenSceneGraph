@@ -399,7 +399,7 @@ ReaderWriterCURL::~ReaderWriterCURL()
 {
     //OSG_NOTICE<<"ReaderWriterCURL::~ReaderWriterCURL()"<<std::endl;
 
-    _threadCurlMap.clear();
+    _easyCurlList.clear();
 
     // clean up curl
     curl_global_cleanup();
@@ -450,13 +450,15 @@ osgDB::ReaderWriter::WriteResult ReaderWriterCURL::writeFile(const osg::Object& 
     long sslVerifyPeer = 1;
     getConnectionOptions(options, proxyAddress, connectTimeout, timeout, sslVerifyPeer);
     EasyCurl::StreamObject sp(&responseBuffer, &requestBuffer, std::string());
-    EasyCurl& easyCurl = getEasyCurl();
-    easyCurl.setConnectionTimeout(connectTimeout);
-    easyCurl.setTimeout(timeout);
-    easyCurl.setSSLVerifyPeer(sslVerifyPeer);
+
+    EasyCurlHandle easyCurl(this);
+
+    easyCurl->setConnectionTimeout(connectTimeout);
+    easyCurl->setTimeout(timeout);
+    easyCurl->setSSLVerifyPeer(sslVerifyPeer);
 
     // Output requestBuffer via curl, and return responseBuffer in message of result.
-    return easyCurl.write(proxyAddress, fullFileName, sp, options);
+    return easyCurl->write(proxyAddress, fullFileName, sp, options);
 }
 
 osgDB::ReaderWriter::ReadResult ReaderWriterCURL::readFile(ObjectType objectType, osgDB::ReaderWriter* rw, std::istream& fin, const osgDB::ReaderWriter::Options *options) const
@@ -592,14 +594,14 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCURL::readFile(ObjectType objectType
     std::stringstream buffer;
 
     EasyCurl::StreamObject sp(&buffer, NULL, std::string());
-    EasyCurl& easyCurl = getEasyCurl();
+    EasyCurlHandle easyCurl(this);
 
     // setup the timeouts:
-    easyCurl.setConnectionTimeout(connectTimeout);
-    easyCurl.setTimeout(timeout);
-    easyCurl.setSSLVerifyPeer(sslVerifyPeer);
+    easyCurl->setConnectionTimeout(connectTimeout);
+    easyCurl->setTimeout(timeout);
+    easyCurl->setSSLVerifyPeer(sslVerifyPeer);
 
-    ReadResult curlResult = easyCurl.read(proxyAddress, fileName, sp, options);
+    ReadResult curlResult = easyCurl->read(proxyAddress, fileName, sp, options);
 
     if (curlResult.status()==ReadResult::FILE_LOADED)
     {
@@ -614,7 +616,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterCURL::readFile(ObjectType objectType
         // mime-type:
         if ( !reader )
         {
-            std::string mimeType = easyCurl.getResultMimeType(sp);
+            std::string mimeType = easyCurl->getResultMimeType(sp);
             OSG_INFO << "CURL: Looking up extension for mime-type " << mimeType << std::endl;
             if ( mimeType.length() > 0 )
             {

@@ -161,25 +161,51 @@ class ReaderWriterCURL : public osgDB::ReaderWriter
         virtual ReadResult readFile(ObjectType objectType, const std::string& fullFileName, const Options *options) const;
         virtual WriteResult writeFile(const osg::Object& obj, const std::string& fullFileName, const Options *options) const;
 
-        EasyCurl& getEasyCurl() const
+        struct EasyCurlHandle
         {
-            OpenThreads::ScopedLock<OpenThreads::Mutex>  lock(_threadCurlMapMutex);
+            const ReaderWriterCURL* _rwc;
+            osg::ref_ptr<EasyCurl> easyCurl;
 
-            osg::ref_ptr<EasyCurl>& ec = _threadCurlMap[OpenThreads::Thread::CurrentThread()];
-            if (!ec) ec = new EasyCurl;
+            EasyCurlHandle(const ReaderWriterCURL* rwc) :
+                _rwc(rwc)
+            {
+                OpenThreads::ScopedLock<OpenThreads::Mutex>  lock(_rwc->_easyCurlListMutex);
+                EasyCurlList::iterator itr = _rwc->_easyCurlList.begin();
+                if (itr != _rwc->_easyCurlList.end())
+                {
+                    easyCurl = *itr;
+                    _rwc->_easyCurlList.erase(itr);
 
-            return *ec;
-        }
+                    OSG_NOTICE<<"Reusing "<<easyCurl.get()<<std::endl;
+                }
+                else
+                {
+                    easyCurl = new EasyCurl;
+
+                    OSG_NOTICE<<"Allocatirn new "<<easyCurl.get()<<std::endl;
+
+                }
+            }
+
+            ~EasyCurlHandle()
+            {
+                OpenThreads::ScopedLock<OpenThreads::Mutex>  lock(_rwc->_easyCurlListMutex);
+                _rwc->_easyCurlList.push_back(easyCurl);
+            }
+
+            EasyCurl* operator -> () { return easyCurl.get(); }
+
+        };
 
         bool read(std::istream& fin, std::string& destination) const;
 
     protected:
         void getConnectionOptions(const osgDB::ReaderWriter::Options *options, std::string& proxyAddress, long& connectTimeout, long& timeout, long& sslVerifyPeer) const;
 
-        typedef std::map< OpenThreads::Thread*, osg::ref_ptr<EasyCurl> >    ThreadCurlMap;
+        typedef std::list< osg::ref_ptr<EasyCurl> >    EasyCurlList;
 
-        mutable OpenThreads::Mutex          _threadCurlMapMutex;
-        mutable ThreadCurlMap               _threadCurlMap;
+        mutable OpenThreads::Mutex          _easyCurlListMutex;
+        mutable EasyCurlList                _easyCurlList;
 };
 
 }
