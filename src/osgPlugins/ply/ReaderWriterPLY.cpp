@@ -1,6 +1,7 @@
 /*
  * PLY  ( Stanford Triangle Format )  File Loader for OSG
  * Copyright (C) 2009 by VizExperts Limited
+ * Copyright (C) 2020 Julien Valentin (mp3butcher@hotmail.com)
  * All rights reserved.
  *
  * This program is  free  software;  you can redistribute it and/or modify it
@@ -36,15 +37,54 @@ using namespace std;
 //! \brief This is the Reader for the ply file format
 //!
 //////////////////////////////////////////////////////////////////////////////
+
 class ReaderWriterPLY : public osgDB::ReaderWriter
 {
 public:
     ReaderWriterPLY()
     {
-        supportsExtension("ply","Stanford Triangle Format");
+        supportsExtension("ply","Stanford Meta Format");
+
+        /** Note semantics from Equalizer LGPL source.*/
+        //assuming compact aliasing (only name and internal format is meaningfull
+/// element properties to read and their mapping
+        _semantic.push_back({ "x", PLY_FLOAT, 0 });
+        _semantic.push_back({ "y", PLY_FLOAT,  0});
+        _semantic.push_back({ "z", PLY_FLOAT,  0});
+        _semantic.push_back({ "nx", PLY_FLOAT, 1});
+        _semantic.push_back({ "ny", PLY_FLOAT,  1});
+        _semantic.push_back({ "nz", PLY_FLOAT,  1});
+        _semantic.push_back({ "red", PLY_FLOAT,  2});
+        _semantic.push_back({ "green", PLY_FLOAT,  2});
+        _semantic.push_back({ "blue", PLY_FLOAT,  2});
+        _semantic.push_back({ "alpha", PLY_FLOAT,  2});
+        _semantic.push_back({ "u", PLY_FLOAT, 3});
+        _semantic.push_back({ "v", PLY_FLOAT,  3});
+        _semantic.push_back({ "texture_u", PLY_FLOAT, 3});
+        _semantic.push_back({ "texture_v", PLY_FLOAT,  3});
+        _semantic.push_back({ "ambient_red", PLY_UCHAR, 4});
+        _semantic.push_back({ "ambient_green", PLY_UCHAR, 4});
+        _semantic.push_back({ "ambient_blue", PLY_UCHAR, 4});
+        _semantic.push_back({ "diffuse_red", PLY_UCHAR,  5});
+        _semantic.push_back({ "diffuse_green", PLY_UCHAR,  5});
+        _semantic.push_back({ "diffuse_blue", PLY_UCHAR, 5});
+        _semantic.push_back({ "specular_red", PLY_UCHAR, 6});
+        _semantic.push_back({ "specular_green", PLY_UCHAR,  6});
+        _semantic.push_back({ "specular_blue", PLY_UCHAR, 6});
+        _semantic.push_back({ "specular_coeff", PLY_FLOAT,  7});
+        _semantic.push_back({ "specular_power", PLY_FLOAT, 7});
+        _semantic.push_back({ "tx", PLY_UCHAR, 6});
+        _semantic.push_back({ "tn", PLY_UINT, 7});
+/// list properties to read (first found is set as primitiveset)
+        _semantic.push_back({ "vertex_indices", -1, -2}); //autotyped uint
+        _semantic.push_back({ "vertex_index", -1, -2}); //autotyped uint
+        _semantic.push_back({ "texture_vertex_indices", -1, -1}); //autotyped uint
     }
 
     virtual const char* className() const { return "ReaderWriterPLY"; }
+
+    void setVertexSemantics(const ply::VertexSemantics &meta) { _semantic = meta; }
+    ply::VertexSemantics& getVertexSemantics() { return _semantic;}
     
     virtual ReadResult readObject(const std::string& filename, const osgDB::ReaderWriter::Options* options) const
     {
@@ -53,6 +93,7 @@ public:
 
     virtual ReadResult readNode(const std::string& fileName, const osgDB::ReaderWriter::Options*) const;
 protected:
+    ply::VertexSemantics _semantic;
 };
 
 // register with Registry to instantiate the above reader/writer.
@@ -77,7 +118,7 @@ osgDB::ReaderWriter::ReadResult ReaderWriterPLY::readNode(const std::string& fil
     if (fileName.empty()) return ReadResult::FILE_NOT_FOUND;
 
     //Instance of vertex data which will read the ply file and convert in to osg::Node
-    ply::VertexData vertexData;
+    ply::VertexData vertexData(_semantic);
     osg::Node* node = vertexData.readPlyFile(fileName.c_str());
 
     if (node)
