@@ -38,7 +38,11 @@ class OSG_EXPORT DrawMeshTasks : public Drawable
         void setCount(GLuint count) { _count = count; }
         GLuint getCount() const { return _count; }
 
-        virtual void drawImplementation(RenderInfo& renderInfo) const;
+        /// override Drawable drawImplementation, calls draw(*renderInfo.getState());
+        virtual void drawImplementation(RenderInfo& renderInfo) const { draw(*renderInfo.getState()); }
+
+        /// do glDrawMeshTasksNV call
+        void draw(State& state) const;
 
     protected:
 

@@ -23,6 +23,39 @@
 #include <osg/MultiDrawMeshTasksIndirectCount>
 #include <osgUtil/Optimizer>
 
+
+namespace osg
+{
+
+class ProxyPrimitive : public PrimitiveSet
+{
+public:
+
+    ProxyPrimitive() {}
+
+    ProxyPrimitive(const ProxyPrimitive& pp, const CopyOp& copyop=CopyOp::SHALLOW_COPY) :
+        PrimitiveSet(pp, copyop),
+        drawMeshTasks(pp.drawMeshTasks) {}
+
+    META_Object(osg, ProxyPrimitive)
+
+    ref_ptr<DrawMeshTasks> drawMeshTasks;
+
+    void draw(State& state, bool) const
+    {
+        drawMeshTasks->draw(state);
+    }
+
+    void accept(PrimitiveFunctor&) const {}
+    void accept(PrimitiveIndexFunctor&) const {}
+
+    unsigned int index(unsigned int) const { return 0; }
+    unsigned int getNumIndices() const { return 0; }
+    void offsetIndices(int) {}
+};
+
+}
+
 int main( int argc, char** argv )
 {
     osg::ArgumentParser arguments( &argc, argv );
@@ -63,7 +96,20 @@ int main( int argc, char** argv )
     osg::ref_ptr<osg::Group> group = new osg::Group;
     group->getOrCreateStateSet()->setAttribute( program.get() );
 
+#if 0
     group->addChild( new osg::DrawMeshTasks(0, 1) );
+#else
+
+    osg::ref_ptr<osg::ProxyPrimitive> proxyPrimitive = new osg::ProxyPrimitive;
+    proxyPrimitive->drawMeshTasks = new osg::DrawMeshTasks(0, 1);
+
+    osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry;
+    geometry->setUseDisplayList(false);
+    geometry->addPrimitiveSet(proxyPrimitive.get());
+
+    group->addChild(geometry);
+
+#endif
     // group->addChild( new osg::DrawMeshTasksIndirect(0) ); // will require a buffer to be bound.
     // group->addChild( new osg::MultiDrawMeshTasksIndirect(0, 0, 0) ); // will require a buffer to be bound.
     // group->addChild( new osg::MultiDrawMeshTasksIndirectCount(0, 0, 0, 0) ); // will require a buffer to be bound.

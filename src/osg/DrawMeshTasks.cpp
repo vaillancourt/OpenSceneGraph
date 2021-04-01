@@ -41,9 +41,9 @@ DrawMeshTasks::~DrawMeshTasks()
 {
 }
 
-void DrawMeshTasks::drawImplementation(RenderInfo& renderInfo) const
+void DrawMeshTasks::draw(State& state) const
 {
-    const GLExtensions* extensions = renderInfo.getState()->get<GLExtensions>();
+    const GLExtensions* extensions = state.get<GLExtensions>();
     if (extensions->isMeshShaderSupported && extensions->glDrawMeshTasksNV)
     {
         extensions->glDrawMeshTasksNV(_first, _count);
